@@ -54,7 +54,7 @@ type TimerDebugConfig = {
 };
 
 const TIMER_DEBUG_STORAGE_KEY = "quantinu-timer-debug-v1";
-const MOBILE_DEBUG_STORAGE_KEY = "quantinu-mobile-debug-v6";
+const MOBILE_DEBUG_STORAGE_KEY = "quantinu-mobile-debug-v7";
 
 type MobileLayoutDebugConfig = {
   timerTop: number;
@@ -69,7 +69,7 @@ const DEFAULT_MOBILE_DEBUG: MobileLayoutDebugConfig = {
   timerTop: 54,
   timerLeft: 50,
   timerScale: 0.9,
-  panelBottom: 14,
+  panelBottom: 4,
   panelWidth: 85,
   panelLeft: 50,
 };
