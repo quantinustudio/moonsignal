@@ -54,7 +54,7 @@ type TimerDebugConfig = {
 };
 
 const TIMER_DEBUG_STORAGE_KEY = "quantinu-timer-debug-v1";
-const MOBILE_DEBUG_STORAGE_KEY = "quantinu-mobile-debug-v3";
+const MOBILE_DEBUG_STORAGE_KEY = "quantinu-mobile-debug-v5";
 
 type MobileLayoutDebugConfig = {
   timerTop: number;
@@ -66,12 +66,12 @@ type MobileLayoutDebugConfig = {
 };
 
 const DEFAULT_MOBILE_DEBUG: MobileLayoutDebugConfig = {
-  timerTop: 44,
+  timerTop: 50,
   timerLeft: 50,
   timerScale: 0.9,
   panelBottom: 14,
   panelWidth: 85,
-  panelLeft: 46,
+  panelLeft: 50,
 };
 
 const IDLE_CELLS: LedCells = ["00", "00", "00", "00", "00"];
