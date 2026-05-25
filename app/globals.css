@@ -774,7 +774,7 @@ body {
 }
 
 .moon-stage[data-layout="mobile"] .monolith-timer {
-  top: var(--mobile-timer-top, 50%);
+  top: var(--mobile-timer-top, 54%);
   left: var(--mobile-timer-left, 50%);
   transform: translate(-50%, -50%) scale(var(--mobile-timer-scale, 0.9));
   transform-origin: center center;
