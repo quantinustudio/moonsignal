@@ -32,6 +32,7 @@ import {
   MAX_BIRTH_YEAR,
   MIN_BIRTH_YEAR,
   buildAffirmationPool,
+  isPastTypicalLifespanFromBirth,
   resolvedProjectedEndMs,
   remainingParts,
   YEAR_MS,
@@ -53,6 +54,25 @@ type TimerDebugConfig = {
 };
 
 const TIMER_DEBUG_STORAGE_KEY = "quantinu-timer-debug-v1";
+const MOBILE_DEBUG_STORAGE_KEY = "quantinu-mobile-debug-v2";
+
+type MobileLayoutDebugConfig = {
+  timerTop: number;
+  timerLeft: number;
+  timerScale: number;
+  panelBottom: number;
+  panelWidth: number;
+  panelLeft: number;
+};
+
+const DEFAULT_MOBILE_DEBUG: MobileLayoutDebugConfig = {
+  timerTop: 28,
+  timerLeft: 50,
+  timerScale: 0.9,
+  panelBottom: 14,
+  panelWidth: 85,
+  panelLeft: 46,
+};
 
 const IDLE_CELLS: LedCells = ["00", "00", "00", "00", "00"];
 
@@ -202,6 +222,74 @@ function saveTimerDebug(config: TimerDebugConfig) {
   localStorage.setItem(TIMER_DEBUG_STORAGE_KEY, JSON.stringify(config));
 }
 
+function loadMobileDebug(): MobileLayoutDebugConfig {
+  if (typeof window === "undefined") return DEFAULT_MOBILE_DEBUG;
+  try {
+    const raw = localStorage.getItem(MOBILE_DEBUG_STORAGE_KEY);
+    if (!raw) return DEFAULT_MOBILE_DEBUG;
+    const parsed = JSON.parse(raw) as Partial<MobileLayoutDebugConfig>;
+    return { ...DEFAULT_MOBILE_DEBUG, ...parsed };
+  } catch {
+    return DEFAULT_MOBILE_DEBUG;
+  }
+}
+
+function saveMobileDebug(config: MobileLayoutDebugConfig) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(MOBILE_DEBUG_STORAGE_KEY, JSON.stringify(config));
+}
+
+function mobileLayoutDebugStyle(
+  config: MobileLayoutDebugConfig,
+): CSSProperties {
+  return {
+    ["--mobile-timer-top" as string]: `${config.timerTop}%`,
+    ["--mobile-timer-left" as string]: `${config.timerLeft}%`,
+    ["--mobile-timer-scale" as string]: String(config.timerScale),
+    ["--mobile-panel-bottom" as string]: `${config.panelBottom}%`,
+    ["--mobile-panel-width" as string]: `${config.panelWidth}%`,
+    ["--mobile-panel-left" as string]: `${config.panelLeft}%`,
+  };
+}
+
+function mobileTimerStyle(config: MobileLayoutDebugConfig): CSSProperties {
+  return {
+    top: `${config.timerTop}%`,
+    left: `${config.timerLeft}%`,
+    transform: `translate(-50%, -50%) scale(${config.timerScale})`,
+    transformOrigin: "center center",
+  };
+}
+
+function mobileBirthPanelStyle(config: MobileLayoutDebugConfig): CSSProperties {
+  return {
+    position: "absolute",
+    left: `${config.panelLeft}%`,
+    bottom: `${config.panelBottom}%`,
+    width: `${config.panelWidth}%`,
+    transform: "translateX(-50%)",
+    zIndex: 25,
+  };
+}
+
+function affirmationLayoutStyle(isMobile: boolean): CSSProperties | undefined {
+  if (!isMobile) return undefined;
+  return {
+    position: "absolute",
+    top: "35%",
+    right: "38%",
+    left: "44%",
+    width: "auto",
+    transform: "none",
+    textAlign: "right",
+    fontSize: "7pt",
+    lineHeight: 1.4,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+    zIndex: 31,
+  };
+}
+
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 const pad3 = (n: number) => n.toString().padStart(3, "0");
 
@@ -279,15 +367,23 @@ function MonolithCountdown({
   cells,
   debug,
   timerDebug,
+  mobileLayout,
 }: {
   cells: LedCells;
   debug: boolean;
   timerDebug: TimerDebugConfig;
+  mobileLayout?: MobileLayoutDebugConfig | null;
 }) {
+  const style = debug
+    ? timerTransformStyle(timerDebug, debug)
+    : mobileLayout
+      ? mobileTimerStyle(mobileLayout)
+      : undefined;
+
   return (
     <div
       className={`monolith-timer${debug ? " monolith-timer--debug" : ""}`}
-      style={timerTransformStyle(timerDebug, debug)}
+      style={style}
       aria-label="countdown"
     >
       <div className="monolith-timer__digits">
@@ -302,9 +398,15 @@ function MonolithCountdown({
   );
 }
 
-function MonolithAffirmation({ line }: { line: string }) {
+function MonolithAffirmation({
+  line,
+  layoutStyle,
+}: {
+  line: string;
+  layoutStyle?: CSSProperties;
+}) {
   return (
-    <p className="monolith-affirmation" aria-live="polite">
+    <p className="monolith-affirmation" style={layoutStyle} aria-live="polite">
       {line}
     </p>
   );
@@ -560,6 +662,7 @@ function BirthDatePanel({
   setDd,
   begin,
   dateWarn,
+  mobileLayoutStyle,
 }: {
   yyyy: string;
   setYyyy: (v: string) => void;
@@ -569,12 +672,13 @@ function BirthDatePanel({
   setDd: (v: string) => void;
   begin: () => void;
   dateWarn: boolean;
+  mobileLayoutStyle?: CSSProperties;
 }) {
   const inputClass = `birth-panel__input${dateWarn ? " birth-panel__input--warn" : ""}`;
 
-  return (
+  const panel = (
     <motion.div
-      className="birth-panel"
+      className={`birth-panel${mobileLayoutStyle ? " birth-panel--in-anchor" : ""}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 12 }}
@@ -616,6 +720,16 @@ function BirthDatePanel({
       <p className="birth-panel__sub">生年月日を入力してください</p>
     </motion.div>
   );
+
+  if (mobileLayoutStyle) {
+    return (
+      <div className="birth-panel-anchor" style={mobileLayoutStyle}>
+        {panel}
+      </div>
+    );
+  }
+
+  return panel;
 }
 
 function InstagramIcon() {
@@ -781,6 +895,82 @@ function TimerDebugPanel({
   );
 }
 
+function MobileDebugPanel({
+  config,
+  onChange,
+  onClose,
+}: {
+  config: MobileLayoutDebugConfig;
+  onChange: (next: MobileLayoutDebugConfig) => void;
+  onClose: () => void;
+}) {
+  const sliders: {
+    key: keyof MobileLayoutDebugConfig;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+  }[] = [
+    { key: "timerTop", label: "timerTop", min: 0, max: 50, step: 0.5 },
+    { key: "timerLeft", label: "timerLeft", min: 0, max: 100, step: 0.5 },
+    { key: "timerScale", label: "timerScale", min: 0.3, max: 2, step: 0.01 },
+    { key: "panelBottom", label: "panelBottom", min: 0, max: 30, step: 0.5 },
+    { key: "panelWidth", label: "panelWidth", min: 60, max: 100, step: 1 },
+    { key: "panelLeft", label: "panelLeft", min: 0, max: 100, step: 0.5 },
+  ];
+
+  const set = (key: keyof MobileLayoutDebugConfig, value: number) => {
+    const next = { ...config, [key]: value };
+    onChange(next);
+    saveMobileDebug(next);
+  };
+
+  return (
+    <div className="mobile-debug-panel" role="dialog" aria-label="Mobile layout debug">
+      <div className="timer-debug-panel__header">
+        <span>Mobile debug</span>
+        <button type="button" className="timer-debug-panel__close" onClick={onClose}>
+          x
+        </button>
+      </div>
+      {sliders.map(({ key, label, min, max, step }) => (
+        <label key={key} className="timer-debug-panel__row">
+          <span>
+            {label}:{" "}
+            {key === "timerScale"
+              ? config[key].toFixed(2)
+              : key === "panelWidth"
+                ? config[key].toFixed(0)
+                : config[key].toFixed(1)}
+            {key === "panelWidth" ? "%" : key === "timerScale" ? "" : "%"}
+          </span>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={config[key]}
+            onChange={(e) => set(key, Number(e.target.value))}
+          />
+        </label>
+      ))}
+      <button
+        type="button"
+        className="timer-debug-panel__reset"
+        onClick={() => {
+          onChange(DEFAULT_MOBILE_DEBUG);
+          saveMobileDebug(DEFAULT_MOBILE_DEBUG);
+        }}
+      >
+        Reset defaults
+      </button>
+      <p className="timer-debug-panel__hint">
+        Tap the sliders button (top-left) or press M. Saved to localStorage.
+      </p>
+    </div>
+  );
+}
+
 export function MoonArtifactExperience() {
   const [yyyy, setYyyy] = useState("");
   const [mm, setMm] = useState("");
@@ -807,16 +997,50 @@ export function MoonArtifactExperience() {
   const [debugMode, setDebugMode] = useState(false);
   const [audioMuted, setAudioMuted] = useState(false);
   const [displayColorId, setDisplayColorId] = useState<DisplayColorId>("orange");
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const forced = new URLSearchParams(window.location.search).get("mobile") === "1";
+    return window.matchMedia("(max-width: 768px)").matches || forced;
+  });
+  const [forceMobilePreview, setForceMobilePreview] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("mobile") === "1";
+  });
+  const [mobileDebug, setMobileDebug] = useState<MobileLayoutDebugConfig>(
+    DEFAULT_MOBILE_DEBUG,
+  );
+  const [mobileDebugMode, setMobileDebugMode] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const active = started && endMs !== null;
   const displayColor =
     DISPLAY_COLORS.find((c) => c.id === displayColorId) ?? DISPLAY_COLORS[1];
   const stageStyle = useMemo(() => displayColorStyle(displayColor), [displayColor]);
+  const mobileBirthStyle = useMemo(
+    () => (isMobileLayout ? mobileBirthPanelStyle(mobileDebug) : undefined),
+    [isMobileLayout, mobileDebug],
+  );
+  const mobileAffirmStyle = useMemo(
+    () => affirmationLayoutStyle(isMobileLayout),
+    [isMobileLayout],
+  );
 
   useEffect(() => {
     setDisplayColorId(loadDisplayColorId());
+    setMobileDebug(loadMobileDebug());
   }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const syncLayout = () => {
+      const mobile = mq.matches || forceMobilePreview;
+      setIsMobileLayout(mobile);
+      if (!mobile) setMobileDebugMode(false);
+    };
+    syncLayout();
+    mq.addEventListener("change", syncLayout);
+    return () => mq.removeEventListener("change", syncLayout);
+  }, [forceMobilePreview]);
 
   const onDisplayColorChange = useCallback((id: DisplayColorId) => {
     setDisplayColorId(id);
@@ -831,12 +1055,19 @@ export function MoonArtifactExperience() {
     setTimerDebug(loadTimerDebug());
     const params = new URLSearchParams(window.location.search);
     if (params.get("debug") === "1") setDebugMode(true);
+    if (params.get("mobileDebug") === "1") setMobileDebugMode(true);
   }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "d" || e.key === "D") {
         setDebugMode((v) => !v);
+      }
+      if (e.key === "m" || e.key === "M") {
+        const mobile =
+          window.matchMedia("(max-width: 768px)").matches ||
+          new URLSearchParams(window.location.search).get("mobile") === "1";
+        if (mobile) setMobileDebugMode((v) => !v);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -964,6 +1195,10 @@ export function MoonArtifactExperience() {
   const affirmationHorizonMs = AFFIRMATION_ONLY_UNDER_YEARS * YEAR_MS;
   const remainingMs =
     started && endMs !== null ? endMs - Date.now() : Number.POSITIVE_INFINITY;
+  const pastTypicalLifespan =
+    sessionBirthMs !== null &&
+    sessionProfile !== null &&
+    isPastTypicalLifespanFromBirth(sessionBirthMs, sessionProfile);
 
   const showAffirmations =
     started &&
@@ -971,7 +1206,9 @@ export function MoonArtifactExperience() {
     sessionAnchorMs !== null &&
     affirmationPool.length > 0 &&
     endMs !== null &&
-    remainingMs < affirmationHorizonMs;
+    (lifeEnded ||
+      remainingMs < affirmationHorizonMs ||
+      pastTypicalLifespan);
 
   useEffect(() => {
     if (sessionAnchorMs === null) return;
@@ -998,11 +1235,23 @@ export function MoonArtifactExperience() {
     saveTimerDebug(next);
   };
 
+  const onMobileDebugChange = (next: MobileLayoutDebugConfig) => {
+    setMobileDebug(next);
+    saveMobileDebug(next);
+  };
+
   return (
-    <div className="moon-stage" style={stageStyle}>
+    <div
+      className={`moon-stage${isMobileLayout ? " moon-stage--mobile" : " moon-stage--desktop"}`}
+      data-layout={isMobileLayout ? "mobile" : "desktop"}
+      style={stageStyle}
+    >
       <div className="moon-canvas-scaler">
         <div className="moon-canvas">
-          <div className="moon-overlay-root">
+          <div
+            className="moon-overlay-root"
+            style={isMobileLayout ? mobileLayoutDebugStyle(mobileDebug) : undefined}
+          >
             <AnimatePresence>
               {!started && (
                 <>
@@ -1029,13 +1278,17 @@ export function MoonArtifactExperience() {
                     setDd={setDd}
                     begin={begin}
                     dateWarn={dateWarn}
+                    mobileLayoutStyle={mobileBirthStyle}
                   />
                 </>
               )}
             </AnimatePresence>
 
             {showAffirmations && affirmationLine && (
-              <MonolithAffirmation line={affirmationLine} />
+              <MonolithAffirmation
+                line={affirmationLine}
+                layoutStyle={mobileAffirmStyle}
+              />
             )}
 
             {!showAffirmations && (
@@ -1043,6 +1296,7 @@ export function MoonArtifactExperience() {
                 cells={displayCells}
                 debug={debugMode}
                 timerDebug={timerDebug}
+                mobileLayout={isMobileLayout && !debugMode ? mobileDebug : null}
               />
             )}
 
@@ -1075,6 +1329,14 @@ export function MoonArtifactExperience() {
           config={timerDebug}
           onChange={onTimerDebugChange}
           onClose={() => setDebugMode(false)}
+        />
+      )}
+
+      {mobileDebugMode && isMobileLayout && (
+        <MobileDebugPanel
+          config={mobileDebug}
+          onChange={onMobileDebugChange}
+          onClose={() => setMobileDebugMode(false)}
         />
       )}
 
