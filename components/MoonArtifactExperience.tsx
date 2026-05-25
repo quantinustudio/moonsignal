@@ -76,6 +76,15 @@ const DEFAULT_MOBILE_DEBUG: MobileLayoutDebugConfig = {
 
 const IDLE_CELLS: LedCells = ["00", "00", "00", "00", "00"];
 
+const REGION_OPTIONS = [
+  { value: "", label: "Global average" },
+  { value: "asia", label: "Asia" },
+  { value: "europe", label: "Europe" },
+  { value: "americas", label: "Americas" },
+  { value: "oceania", label: "Oceania" },
+  { value: "africa", label: "Africa" },
+] as const;
+
 const TIMER_ROWS = [
   { label: "YRS", index: 0 },
   { label: "DAYS", index: 1 },
@@ -663,6 +672,8 @@ function BirthDatePanel({
   setMm,
   dd,
   setDd,
+  region,
+  setRegion,
   begin,
   dateWarn,
   mobileLayoutStyle,
@@ -673,6 +684,8 @@ function BirthDatePanel({
   setMm: (v: string) => void;
   dd: string;
   setDd: (v: string) => void;
+  region: string;
+  setRegion: (v: string) => void;
   begin: () => void;
   dateWarn: boolean;
   mobileLayoutStyle?: CSSProperties;
@@ -717,6 +730,21 @@ function BirthDatePanel({
           aria-label="day"
         />
       </div>
+      <label className="birth-panel__region-label">
+        <span className="birth-panel__region-text">REGION</span>
+        <select
+          className="birth-panel__select"
+          value={region}
+          onChange={(e) => setRegion(e.target.value)}
+          aria-label="region"
+        >
+          {REGION_OPTIONS.map(({ value, label }) => (
+            <option key={value || "global"} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
       <button type="button" className="birth-panel__begin" onClick={begin}>
         BEGIN
       </button>
@@ -984,6 +1012,7 @@ export function MoonArtifactExperience() {
   const [exercise, setExercise] = useState<Level>(0);
   const [sleep, setSleep] = useState<Level>(0);
   const [happiness, setHappiness] = useState<Level>(0);
+  const [region, setRegion] = useState("");
 
   const [endMs, setEndMs] = useState<number | null>(null);
   const [parts, setParts] = useState<LifetimeParts | null>(null);
@@ -1154,7 +1183,7 @@ export function MoonArtifactExperience() {
 
     const parsed = parseBirthUtc(yyy, mmm, ddd);
     const profile: LifeProfile = {
-      region: "",
+      region,
       sex,
       smoking,
       alcohol,
@@ -1196,6 +1225,7 @@ export function MoonArtifactExperience() {
     yyyy,
     mm,
     dd,
+    region,
     sex,
     smoking,
     alcohol,
@@ -1296,6 +1326,8 @@ export function MoonArtifactExperience() {
                   setMm={setMm}
                   dd={dd}
                   setDd={setDd}
+                  region={region}
+                  setRegion={setRegion}
                   begin={begin}
                   dateWarn={dateWarn}
                   mobileLayoutStyle={mobileBirthStyle}
