@@ -77,12 +77,12 @@ const DEFAULT_MOBILE_DEBUG: MobileLayoutDebugConfig = {
 const IDLE_CELLS: LedCells = ["00", "00", "00", "00", "00"];
 
 const REGION_OPTIONS = [
-  { value: "", label: "Global average" },
-  { value: "asia", label: "Asia" },
-  { value: "europe", label: "Europe" },
-  { value: "americas", label: "Americas" },
-  { value: "oceania", label: "Oceania" },
-  { value: "africa", label: "Africa" },
+  { value: "", label: "Global average / 世界平均" },
+  { value: "asia", label: "Asia / アジア" },
+  { value: "europe", label: "Europe / ヨーロッパ" },
+  { value: "americas", label: "Americas / 南北アメリカ" },
+  { value: "oceania", label: "Oceania / オセアニア" },
+  { value: "africa", label: "Africa / アフリカ" },
 ] as const;
 
 const TIMER_ROWS = [
@@ -730,8 +730,8 @@ function BirthDatePanel({
           aria-label="day"
         />
       </div>
-      <label className="birth-panel__region-label">
-        <span className="birth-panel__region-text">REGION</span>
+      <div className="birth-panel__region">
+        <p className="birth-panel__title birth-panel__title--region">REGION</p>
         <select
           className="birth-panel__select"
           value={region}
@@ -744,11 +744,11 @@ function BirthDatePanel({
             </option>
           ))}
         </select>
-      </label>
+      </div>
       <button type="button" className="birth-panel__begin" onClick={begin}>
         BEGIN
       </button>
-      <p className="birth-panel__sub">生年月日を入力してください</p>
+      <p className="birth-panel__sub">生年月日と地区を入力してください</p>
     </motion.div>
   );
 
