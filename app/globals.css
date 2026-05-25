@@ -716,10 +716,61 @@ body {
 
 .moon-stage[data-layout="mobile"] .moon-canvas {
   background-image: url("/images/moon_bg_mobile.png");
+  overflow: visible;
+}
+
+.moon-stage[data-layout="mobile"] .moon-overlay-root {
+  overflow: visible;
 }
 
 .moon-stage[data-layout="mobile"] .icon-columns {
-  display: none;
+  z-index: 30;
+}
+
+.moon-stage[data-layout="mobile"] .icon-column {
+  --icon-slot: 28px;
+  --icon-gap: 8px;
+  top: 40%;
+}
+
+.moon-stage[data-layout="mobile"] .icon-column--left {
+  left: 24%;
+  transform: translate(-50%, -50%) translateY(calc(var(--icon-slot) + var(--icon-gap)));
+}
+
+.moon-stage[data-layout="mobile"] .icon-column--right {
+  left: 76%;
+  transform: translate(-50%, -50%);
+}
+
+.moon-stage[data-layout="mobile"] .icon-row__frame {
+  width: 28px;
+  height: 28px;
+}
+
+.moon-stage[data-layout="mobile"] .icon-row__item {
+  min-height: 28px;
+}
+
+.moon-stage[data-layout="mobile"] .icon-row__stack--down {
+  min-height: 28px;
+}
+
+.moon-stage[data-layout="mobile"] .icon-row__stack--left,
+.moon-stage[data-layout="mobile"] .icon-row__stack--right {
+  --stack-icon: 14px;
+  --stack-gap: 5px;
+  min-height: 28px;
+  height: 28px;
+}
+
+.moon-stage[data-layout="mobile"] .icon-columns svg {
+  width: 14px;
+  height: 14px;
+}
+
+.moon-stage[data-layout="mobile"] .icon-dim {
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .moon-stage[data-layout="mobile"] .monolith-timer {

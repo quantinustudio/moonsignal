@@ -542,18 +542,19 @@ function StackedLevelIcon({
   );
 }
 
-function GenderIcon({ sex }: { sex: Sex }) {
-  const iconSize = "h-[18px] w-[18px]";
+function GenderIcon({ sex, compact = false }: { sex: Sex; compact?: boolean }) {
+  const iconSize = compact ? "h-[14px] w-[14px]" : "h-[18px] w-[18px]";
   if (sex === "male") return <Mars className={iconSize} strokeWidth={1.25} />;
   if (sex === "female") return <Venus className={iconSize} strokeWidth={1.25} />;
   return <VenusAndMars className={iconSize} strokeWidth={1.25} />;
 }
 
-function MoodIcon({ level }: { level: Level }) {
-  if (level === 1) return <Frown className="h-[18px] w-[18px]" strokeWidth={1.25} />;
-  if (level === 2) return <Meh className="h-[18px] w-[18px]" strokeWidth={1.25} />;
-  if (level === 3) return <Smile className="h-[18px] w-[18px]" strokeWidth={1.25} />;
-  return <Meh className="h-[18px] w-[18px]" strokeWidth={1.25} />;
+function MoodIcon({ level, compact = false }: { level: Level; compact?: boolean }) {
+  const iconSize = compact ? "h-[14px] w-[14px]" : "h-[18px] w-[18px]";
+  if (level === 1) return <Frown className={iconSize} strokeWidth={1.25} />;
+  if (level === 2) return <Meh className={iconSize} strokeWidth={1.25} />;
+  if (level === 3) return <Smile className={iconSize} strokeWidth={1.25} />;
+  return <Meh className={iconSize} strokeWidth={1.25} />;
 }
 
 function IconRow({
@@ -569,6 +570,7 @@ function IconRow({
   setSleep,
   happiness,
   setHappiness,
+  isMobileLayout,
 }: {
   sex: Sex;
   setSex: (v: Sex) => void;
@@ -582,8 +584,9 @@ function IconRow({
   setSleep: (v: Level) => void;
   happiness: Level;
   setHappiness: (v: Level) => void;
+  isMobileLayout: boolean;
 }) {
-  const iconSize = "h-[18px] w-[18px]";
+  const iconSize = isMobileLayout ? "h-[14px] w-[14px]" : "h-[18px] w-[18px]";
 
   const toggleSex = () => {
     if (sex === "") setSex("male");
@@ -602,7 +605,7 @@ function IconRow({
           aria-pressed={sex !== ""}
         >
           <div className={`icon-row__frame ${sex ? "icon-lit" : "icon-dim"}`}>
-            <GenderIcon sex={sex} />
+            <GenderIcon sex={sex} compact={isMobileLayout} />
           </div>
         </button>
 
@@ -645,7 +648,7 @@ function IconRow({
           aria-label="mood"
         >
           <div className={`icon-row__frame ${happiness ? "icon-lit" : "icon-dim"}`}>
-            <MoodIcon level={happiness} />
+            <MoodIcon level={happiness} compact={isMobileLayout} />
           </div>
         </button>
       </div>
@@ -1000,7 +1003,11 @@ export function MoonArtifactExperience() {
   const [isMobileLayout, setIsMobileLayout] = useState(() => {
     if (typeof window === "undefined") return false;
     const forced = new URLSearchParams(window.location.search).get("mobile") === "1";
-    return window.matchMedia("(max-width: 768px)").matches || forced;
+    return (
+      window.matchMedia("(max-width: 768px)").matches ||
+      window.matchMedia("(max-aspect-ratio: 1/1)").matches ||
+      forced
+    );
   });
   const [forceMobilePreview, setForceMobilePreview] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1012,6 +1019,7 @@ export function MoonArtifactExperience() {
   const [mobileDebugMode, setMobileDebugMode] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const scalerRef = useRef<HTMLDivElement | null>(null);
   const active = started && endMs !== null;
   const displayColor =
     DISPLAY_COLORS.find((c) => c.id === displayColorId) ?? DISPLAY_COLORS[1];
@@ -1031,15 +1039,23 @@ export function MoonArtifactExperience() {
   }, []);
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
+    const mqNarrow = window.matchMedia("(max-width: 768px)");
+    const mqPortrait = window.matchMedia("(max-aspect-ratio: 1/1)");
     const syncLayout = () => {
-      const mobile = mq.matches || forceMobilePreview;
+      const mobile =
+        forceMobilePreview || mqNarrow.matches || mqPortrait.matches;
       setIsMobileLayout(mobile);
       if (!mobile) setMobileDebugMode(false);
     };
     syncLayout();
-    mq.addEventListener("change", syncLayout);
-    return () => mq.removeEventListener("change", syncLayout);
+    mqNarrow.addEventListener("change", syncLayout);
+    mqPortrait.addEventListener("change", syncLayout);
+    window.addEventListener("resize", syncLayout);
+    return () => {
+      mqNarrow.removeEventListener("change", syncLayout);
+      mqPortrait.removeEventListener("change", syncLayout);
+      window.removeEventListener("resize", syncLayout);
+    };
   }, [forceMobilePreview]);
 
   const onDisplayColorChange = useCallback((id: DisplayColorId) => {
@@ -1066,6 +1082,7 @@ export function MoonArtifactExperience() {
       if (e.key === "m" || e.key === "M") {
         const mobile =
           window.matchMedia("(max-width: 768px)").matches ||
+          window.matchMedia("(max-aspect-ratio: 1/1)").matches ||
           new URLSearchParams(window.location.search).get("mobile") === "1";
         if (mobile) setMobileDebugMode((v) => !v);
       }
@@ -1246,41 +1263,43 @@ export function MoonArtifactExperience() {
       data-layout={isMobileLayout ? "mobile" : "desktop"}
       style={stageStyle}
     >
-      <div className="moon-canvas-scaler">
+      <div className="moon-canvas-scaler" ref={scalerRef}>
         <div className="moon-canvas">
           <div
             className="moon-overlay-root"
             style={isMobileLayout ? mobileLayoutDebugStyle(mobileDebug) : undefined}
           >
+            {!started && (
+              <IconRow
+                sex={sex}
+                setSex={setSex}
+                smoking={smoking}
+                setSmoking={setSmoking}
+                alcohol={alcohol}
+                setAlcohol={setAlcohol}
+                exercise={exercise}
+                setExercise={setExercise}
+                sleep={sleep}
+                setSleep={setSleep}
+                happiness={happiness}
+                setHappiness={setHappiness}
+                isMobileLayout={isMobileLayout}
+              />
+            )}
+
             <AnimatePresence>
               {!started && (
-                <>
-                  <IconRow
-                    sex={sex}
-                    setSex={setSex}
-                    smoking={smoking}
-                    setSmoking={setSmoking}
-                    alcohol={alcohol}
-                    setAlcohol={setAlcohol}
-                    exercise={exercise}
-                    setExercise={setExercise}
-                    sleep={sleep}
-                    setSleep={setSleep}
-                    happiness={happiness}
-                    setHappiness={setHappiness}
-                  />
-                  <BirthDatePanel
-                    yyyy={yyyy}
-                    setYyyy={setYyyy}
-                    mm={mm}
-                    setMm={setMm}
-                    dd={dd}
-                    setDd={setDd}
-                    begin={begin}
-                    dateWarn={dateWarn}
-                    mobileLayoutStyle={mobileBirthStyle}
-                  />
-                </>
+                <BirthDatePanel
+                  yyyy={yyyy}
+                  setYyyy={setYyyy}
+                  mm={mm}
+                  setMm={setMm}
+                  dd={dd}
+                  setDd={setDd}
+                  begin={begin}
+                  dateWarn={dateWarn}
+                  mobileLayoutStyle={mobileBirthStyle}
+                />
               )}
             </AnimatePresence>
 
