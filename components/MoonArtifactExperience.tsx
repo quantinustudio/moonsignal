@@ -649,8 +649,41 @@ function ThreadsIcon() {
 }
 
 function PageFooter() {
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const SESSION_KEY = "quantinu-signal-counted";
+
+    async function loadCount() {
+      try {
+        if (!sessionStorage.getItem(SESSION_KEY)) {
+          const hitRes = await fetch("/api/signals", { method: "POST" });
+          if (hitRes.ok) {
+            const hitData = await hitRes.json();
+            setCount(typeof hitData.count === "number" ? hitData.count : 0);
+            sessionStorage.setItem(SESSION_KEY, "1");
+            return;
+          }
+        }
+
+        const res = await fetch("/api/signals");
+        if (!res.ok) return;
+        const data = await res.json();
+        setCount(typeof data.count === "number" ? data.count : 0);
+      } catch {
+        /* counter unavailable */
+      }
+    }
+
+    loadCount();
+  }, []);
+
+  const display =
+    count === null ? "-----" : String(count).padStart(5, "0");
+
   return (
     <footer className="page-footer">
+      <p className="page-footer__signals">SiGNaLs ReCeiVed : {display}</p>
       <p className="page-footer__copy">
         <span>© 2026 Quantinu Studio. All rights reserved.</span>
         <span className="page-footer__social">

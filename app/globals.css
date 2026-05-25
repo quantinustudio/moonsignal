@@ -357,6 +357,15 @@ body {
   flex-shrink: 0;
 }
 
+.page-footer__signals {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: clamp(0.38rem, 1.4vw, 0.48rem);
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: rgba(120, 200, 255, 0.85);
+}
+
 .page-footer__copy {
   margin: 0;
   display: inline-flex;
